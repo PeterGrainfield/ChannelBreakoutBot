@@ -496,6 +496,7 @@ class ChannelBreakOut:
         logging.info("Expected value: {}".format(ev))
         logging.info("The profitFactor: {}".format(profitFactor))
         logging.info("The maximum Profit and Loss: {}JPY, {}JPY".format(maxProfit, maxLoss))
+        logging.info("The average Profit and Loss: {}JPY, {}JPY".format(winAve, loseAve))
         if self.showTradeDetail:
             logging.info("==Trade detail==")
             for log in tradeLog:
@@ -601,8 +602,7 @@ class ChannelBreakOut:
         """
         self.executionsWebsocket()
         self.spotExecutionsWebsocket()
-        #約定データが蓄積されるまで待機
-        time.sleep(20)
+
         pos = 0
         pl = []
         pl.append(0)
@@ -610,10 +610,6 @@ class ChannelBreakOut:
         lot = self.lot
         originalLot = self.lot
         waitTerm = 0
-
-        # 証拠金の状態を取得
-        collateral = self.order.getcollateral()
-        logging.info('collateral:%s', collateral["collateral"])
 
         # 約定履歴ファイルの復元
         try:
@@ -657,6 +653,10 @@ class ChannelBreakOut:
 
         entryLowLine, entryHighLine = self.calculateLines(df_candleStick, self.entryTerm, self.rangePercent, self.rangePercentTerm)
         closeLowLine, closeHighLine = self.calculateLines(df_candleStick, self.closeTerm, self.rangePercent, self.rangePercentTerm)
+
+        #約定データが蓄積されるまで待機
+        while (len(self.executions ) < 30) or (len(self.spotExecutions ) < 1) :
+            time.sleep(0.5)
 
         #直近約定件数30件の高値と安値
         try:
@@ -761,10 +761,11 @@ class ChannelBreakOut:
                     logging.info("SFD:%s",sfd)
 
             #ログ出力
-            logging.info('high:%s low:%s isRange:%s', high, low, isRange[-1])
-            logging.info('entryHighLine:%s entryLowLine:%s', entryHighLine[-1], entryLowLine[-1])
-            logging.info('closeLowLine:%s closeHighLine:%s', closeLowLine[-1], closeHighLine[-1])
-            logging.info('Server Health is:%s State is:%s', boardState["health"], boardState["state"])
+            logging.info('isRange:%s', isRange[-1])
+            logging.info('last30:[High:%s, Low:%s]', high, low)
+            logging.info('entry :[High:%s, Low:%s]', entryHighLine[-1], entryLowLine[-1])
+            logging.info('close :[Low:%s, High:%s]', closeLowLine[-1], closeHighLine[-1])
+            logging.info('Server:[%s/%s]', boardState["health"], boardState["state"])
             if pos == 1:
                 logging.info('position : Long(Price:%s lot:%s)',lastPositionPrice,lot)
             elif pos == -1:
